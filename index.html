@@ -1794,17 +1794,6 @@
        VAPI VOICE WIDGET (official browser CDN)
   ══════════════════════════════════════════════ -->
 
-  <!-- Hide Vapi's default floating button — we use our own UI -->
-  <style>
-    [id^="vapi-"], [class^="vapi-"] {
-      position: fixed !important;
-      bottom: -9999px !important;
-      right: -9999px !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-  </style>
-
   <script>
     const VAPI_PUBLIC_KEY   = "5ae9cca0-978d-4c03-8f97-fd38c3d46b0c";
     const VAPI_ASSISTANT_ID = "a46df0ba-75b9-40df-92b5-cba88bbd62fd";
@@ -1813,26 +1802,18 @@
     let vapi        = null;
     let widgetState = "idle";
 
-    // Load Vapi's official browser script asynchronously
+    // Load official @vapi-ai/web SDK (v2.5.2 pinned)
     (function(d, t) {
       var g = document.createElement(t), s = d.getElementsByTagName(t)[0];
-      g.src   = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+      g.src   = "https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.5.2/dist/vapi.js";
       g.defer = true;
       g.async = true;
       s.parentNode.insertBefore(g, s);
 
       g.onload = function() {
         try {
-          vapi = window.vapiSDK.run({
-            apiKey:    VAPI_PUBLIC_KEY,
-            assistant: VAPI_ASSISTANT_ID,
-            config: {
-              position: "bottom-right",
-              offset:   "-9999px",   // hide their default button off-screen
-              width:    "1px",
-              height:   "1px",
-            },
-          });
+          // v2 SDK: constructor takes the public key
+          vapi = new window.vapiSDK(VAPI_PUBLIC_KEY);
 
           vapi.on("call-start",   () => setWidgetState("listening"));
           vapi.on("speech-start", () => setWidgetState("speaking"));
@@ -1840,7 +1821,7 @@
           vapi.on("call-end",     () => setWidgetState("ended"));
           vapi.on("error", (e)    => { console.error("Vapi error:", e); setWidgetState("idle"); });
 
-          console.log("Vapi loaded ✓");
+          console.log("Vapi SDK loaded ✓");
         } catch(err) {
           console.error("Vapi init failed:", err);
         }
