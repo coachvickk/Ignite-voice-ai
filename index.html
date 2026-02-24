@@ -1813,7 +1813,7 @@
       g.onload = function() {
         try {
           // v2 SDK: constructor takes the public key
-          vapi = new window.vapiSDK(VAPI_PUBLIC_KEY);
+          vapi = new window.Vapi(VAPI_PUBLIC_KEY);
 
           vapi.on("call-start",   () => setWidgetState("listening"));
           vapi.on("speech-start", () => setWidgetState("speaking"));
