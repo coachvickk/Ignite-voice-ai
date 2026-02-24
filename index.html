@@ -1834,19 +1834,27 @@
 
     function handleMicClick() {
       if (!vapi) {
-        // Vapi still loading or failed — fall back to phone
         window.location.href = PHONE_FALLBACK;
         return;
       }
 
       if (widgetState === "idle" || widgetState === "ended") {
-        setWidgetState("connecting");
-        try {
-          vapi.start(VAPI_ASSISTANT_ID);
-        } catch(e) {
-          console.error("vapi.start error:", e);
-          setWidgetState("idle");
-        }
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(() => {
+            setWidgetState("connecting");
+            try {
+              vapi.start(VAPI_ASSISTANT_ID);
+            } catch(e) {
+              console.error("vapi.start error:", e);
+              setWidgetState("idle");
+            }
+          })
+          .catch((err) => {
+            console.error("Mic permission denied:", err);
+            const statusSub = document.getElementById("status-sub");
+            statusSub.textContent = "⚠️ Microphone access needed. Click the 🔒 in your address bar to allow, then try again.";
+            statusSub.style.color = "#F47820";
+          });
       } else {
         try { vapi.stop(); } catch(e) {}
         setWidgetState("idle");
