@@ -2070,13 +2070,9 @@
 
   <script>
     // ── GHL Lead Capture ─────────────────────────────────────────────────────
-    // Replace the value below with your GHL Location API Key
-    // Found in: GoHighLevel → Settings → Integrations → API Key
-    // TODO: Replace with fresh API key from GHL → Settings → Integrations → API Key
-    // The key below is from 2023 and was issued for the wrong location.
-    // New key must be scoped to location O8UXdpQoYE95uvuQ3JLf (Ignite Design).
-    const GHL_API_KEY     = "REPLACE_WITH_FRESH_GHL_API_KEY";
-    const GHL_LOCATION_ID = "O8UXdpQoYE95uvuQ3JLf";
+    // All GHL calls go through the Cloudflare Worker proxy.
+    // The GHL API key lives in Cloudflare as an encrypted secret — never here.
+    const GHL_PROXY = "https://sparkvoice-ghl-proxy.ignitedesign.workers.dev";
 
     function openGHLModal() {
       const modal = document.getElementById("ghl-modal");
@@ -2143,23 +2139,10 @@
       errEl.style.display     = "none";
 
       try {
-        const res = await fetch("https://rest.gohighlevel.com/v1/contacts/", {
+        const res = await fetch(`${GHL_PROXY}/api/contact`, {
           method: "POST",
-          headers: {
-            "Content-Type":  "application/json",
-            "Authorization": `Bearer ${GHL_API_KEY}`,
-          },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            phone,
-            companyName,
-            locationId: GHL_LOCATION_ID,
-            tags:       ["website-lead", "voice-ai-landing-page"],
-            source:     "Voice AI Landing Page",
-            customField: { interested_in: interest },
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ firstName, lastName, email, phone, companyName, interest }),
         });
 
         if (!res.ok) {
@@ -2209,26 +2192,12 @@
         setTimeout(prefillEmail, 150);
       };
 
-      // Tag the contact in GHL — fully silent, never breaks the page
-      fetch(
-        'https://rest.gohighlevel.com/v1/contacts/lookup?email=' + encodeURIComponent(decoded),
-        { headers: { 'Authorization': 'Bearer ' + GHL_API_KEY } }
-      )
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (!data) return;
-        var contact = data.contact || (data.contacts && data.contacts[0]);
-        if (!contact || !contact.id) return;
-        fetch(
-          'https://rest.gohighlevel.com/v1/contacts/' + contact.id + '/tags/',
-          {
-            method:  'POST',
-            headers: { 'Authorization': 'Bearer ' + GHL_API_KEY, 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ tags: ['visited-demo-page'] }),
-          }
-        );
-      })
-      .catch(function () {});
+      // Tag the contact in GHL via proxy — fully silent, never breaks the page
+      fetch(GHL_PROXY + '/api/track', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: decoded }),
+      }).catch(function () {});
     })();
   </script>
 
